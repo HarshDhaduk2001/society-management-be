@@ -19,6 +19,7 @@ const ROUTES: [M, string, boolean][] = [
   ['post', '/auth/password/login', true],
   ['post', '/auth/passkey/options', true],
   ['post', '/auth/passkey/verify', true],
+  ['post', '/auth/app/choose', true],
   ['post', '/auth/mfa/verify', true],
   ['post', '/auth/mfa/enroll/start', true],
   ['post', '/auth/mfa/enroll/confirm', true],
@@ -27,6 +28,7 @@ const ROUTES: [M, string, boolean][] = [
   ['get', '/auth/me', false],
   ['patch', '/auth/me', false],
   ['post', '/auth/switch-society', false],
+  ['post', '/auth/switch-app', false],
   ['post', '/auth/reauth/otp', false],
   ['post', '/auth/reauth/passkey-options', false],
   ['post', '/auth/reauth', false],
@@ -59,8 +61,8 @@ const ROUTES: [M, string, boolean][] = [
 ];
 
 describe('route table (section 8)', () => {
-  it('has 43 module 02 routes and public.routes.ts lists exactly the public ones (plus health, dev and webhooks)', () => {
-    expect(ROUTES).toHaveLength(43);
+  it('has 45 module 02 routes and public.routes.ts lists exactly the public ones (plus health, dev and webhooks)', () => {
+    expect(ROUTES).toHaveLength(45); // 43 of the spec plus /auth/app/choose and /auth/switch-app (single sign-in address)
     const declared = ROUTES.filter(r => r[2]).map(r => `${r[0].toUpperCase()} ${r[1]}`);
     const listed = PUBLIC_ROUTES.filter(r => typeof r.path === 'string' && r.path.startsWith('/auth/')).map(
       r => `${r.method} ${r.path}`,
@@ -108,6 +110,7 @@ describe('route table (section 8)', () => {
       ['/auth/logout', { x: 1 }],
       ['/auth/refresh', { x: 1 }],
       ['/auth/switch-society', { societyId: 1, x: 1 }],
+      ['/auth/switch-app', { app: 'ADMIN', x: 1 }],
       ['/auth/reauth', { method: 'TOTP', code: '123456', x: 1 }],
       ['/me/security/totp/setup', { x: 1 }],
       ['/me/security/password', { newPassword: 'abc', x: 1 }],
