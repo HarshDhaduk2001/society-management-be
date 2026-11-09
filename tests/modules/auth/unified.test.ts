@@ -331,9 +331,11 @@ describe('a person who may open more than one app picks one (POST /auth/app/choo
   });
 });
 
+let swSeq = 0;
 describe('switching app after sign-in (POST /auth/switch-app)', () => {
   async function signedInAsAdmin(first: 'otp' | 'password') {
-    const u = await makeUser({ email: 'sw@skyheights.in', mfa: first === 'password' });
+    const email = `sw${++swSeq}@skyheights.in`;
+    const u = await makeUser({ email, mfa: first === 'password' });
     grant(u.id, first === 'password' ? ['PLATFORM', 'ADMIN'] : ['ADMIN', 'RESIDENT'], {
       resident: first === 'otp',
       mfa: first === 'password',
@@ -347,7 +349,7 @@ describe('switching app after sign-in (POST /auth/switch-app)', () => {
       );
       return { u, cookies: withCookies(c) };
     }
-    const r = await passwordLogin('sw@skyheights.in');
+    const r = await passwordLogin(email);
     expect(r.body.data.status).toBe('APP_CHOICE_REQUIRED');
     const c = await post('/auth/app/choose', { challengeToken: r.body.data.challengeToken, app: 'ADMIN' }, U);
     const v = await post(
@@ -409,6 +411,26 @@ describe('switching app after sign-in (POST /auth/switch-app)', () => {
     const r = await post('/auth/switch-app', { app: 'GATE' }, { ...U, cookies });
     expect(r.status).toBe(403);
     expect(r.body.code).toBe('NO_ACCESS_FOR_APP');
+  });
+
+  it('lists the apps the person can switch to, by how they signed in', async () => {
+    const otp = await signedInAsAdmin('otp');
+    access.set(otp.u.id, ['PLATFORM', 'ADMIN', 'RESIDENT']);
+    const a = await get('/auth/apps', { ...U, cookies: otp.cookies });
+    expect(a.status, JSON.stringify(a.body)).toBe(200);
+    expect(a.body.data).toEqual({ current: 'ADMIN', available: ['RESIDENT'] }); // an OTP sign-in never offers the platform
+
+    const pw = await signedInAsAdmin('password');
+    const b = await get('/auth/apps', { ...U, cookies: pw.cookies });
+    expect(b.body.data).toEqual({ current: 'ADMIN', available: ['PLATFORM'] }); // a password sign-in has no resident app
+  });
+
+  it('lists nothing on a per-role address, and needs a session', async () => {
+    const { cookies } = await signedInAsAdmin('otp');
+    const onAdmin = await get('/auth/apps', { app: 'ADMIN', cookies });
+    expect(onAdmin.status).toBe(200);
+    expect(onAdmin.body.data).toEqual({ current: 'ADMIN', available: [] });
+    expect((await get('/auth/apps', U)).status).toBe(401);
   });
 
   it('is only for the single sign-in address, and needs a session', async () => {

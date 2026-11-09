@@ -89,6 +89,9 @@ export const authController = {
   switchSociety: handler(async (req, res) => {
     ok(res, await meSvc.switchSociety(ctxOf(req), body<{ societyId: number }>(req).societyId));
   }),
+  apps: handler(async (req, res) => {
+    ok(res, await meSvc.availableApps(ctxOf(req)));
+  }),
   switchApp: handler(async (req, res) => {
     const r = await meSvc.switchApp(ctxOf(req), body<{ app: ClientApp }>(req).app);
     if (r.cookies) setSessionCookies(res, r.cookies);

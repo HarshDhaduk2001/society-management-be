@@ -29,6 +29,7 @@ const ROUTES: [M, string, boolean][] = [
   ['patch', '/auth/me', false],
   ['post', '/auth/switch-society', false],
   ['post', '/auth/switch-app', false],
+  ['get', '/auth/apps', false],
   ['post', '/auth/reauth/otp', false],
   ['post', '/auth/reauth/passkey-options', false],
   ['post', '/auth/reauth', false],
@@ -61,8 +62,8 @@ const ROUTES: [M, string, boolean][] = [
 ];
 
 describe('route table (section 8)', () => {
-  it('has 45 module 02 routes and public.routes.ts lists exactly the public ones (plus health, dev and webhooks)', () => {
-    expect(ROUTES).toHaveLength(45); // 43 of the spec plus /auth/app/choose and /auth/switch-app (single sign-in address)
+  it('has 46 module 02 routes and public.routes.ts lists exactly the public ones (plus health, dev and webhooks)', () => {
+    expect(ROUTES).toHaveLength(46); // 43 of the spec plus /auth/app/choose, /auth/switch-app and /auth/apps (single sign-in address)
     const declared = ROUTES.filter(r => r[2]).map(r => `${r[0].toUpperCase()} ${r[1]}`);
     const listed = PUBLIC_ROUTES.filter(r => typeof r.path === 'string' && r.path.startsWith('/auth/')).map(
       r => `${r.method} ${r.path}`,

@@ -19,6 +19,7 @@ import {
 } from './auth.sessions';
 import type { SessionCookies } from './auth.tokens';
 import { APP_RULES, type AuthMe, type AuthUserView, type ClientApp } from './auth.types';
+import { candidateAppsFor, type FirstFactor } from './auth.signin';
 import { lockUser } from './auth.users';
 import { safeAfterCommit } from './auth.util';
 
@@ -102,6 +103,24 @@ export async function switchSociety(ctx: Ctx, societyId: number): Promise<AuthMe
   await sessions.setActiveSociety(s0.id, societyId, {});
   const s = (await Session.findByPk(s0.id))!;
   return buildMe((await User.findByPk(u.id!))!, s);
+}
+
+/**
+ * `GET /auth/apps` (single sign-in address only): the app of this session and the other apps the person can switch to with the
+ * way they signed in. Empty on a per-role address and in a support session, so the client shows no switch button there.
+ */
+export async function availableApps(ctx: Ctx): Promise<{ current: ClientApp; available: ClientApp[] }> {
+  const s = ctx.session!;
+  const current = s.clientApp;
+  if (!ctx.unified || s.supportGrantId) return { current, available: [] };
+  const first = s.amr[0];
+  const factor: FirstFactor | null =
+    first === 'OTP' ? 'OTP' : first === 'PASSWORD' ? 'PASSWORD' : first === 'PASSKEY' ? 'PASSKEY' : null;
+  if (!factor) return { current, available: [] };
+  const u = (await User.findByPk(ctx.user!.id))!;
+  if ((await userRequiresMfa(u)) && !s.mfaVerified) return { current, available: [] };
+  const { apps } = await candidateAppsFor(u.id!, factor);
+  return { current, available: apps.filter(a => a !== current) };
 }
 
 /**

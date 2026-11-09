@@ -104,7 +104,7 @@ export async function completeFirstFactor(
   }
 
   // single sign-in address: the app is decided here, from what the person may open with this first factor
-  const { apps, hadAccess } = await candidateAppsFor(user, firstFactor);
+  const { apps, hadAccess } = await candidateAppsFor(user.id!, firstFactor);
   if (!apps.length)
     return {
       error: hadAccess
@@ -143,18 +143,18 @@ const METHOD_OF: Record<FirstFactor, 'otp' | 'password' | 'passkey'> = {
  * Everybody can be a resident, so that app is offered next to a real role only when the person has a resident link too; this
  * keeps a committee member who is not also a resident from being asked every time.
  */
-async function candidateAppsFor(
-  user: User,
+export async function candidateAppsFor(
+  userId: number,
   factor: FirstFactor,
 ): Promise<{ apps: ClientApp[]; hadAccess: boolean }> {
   const access = ports().authAccess;
   const have: ClientApp[] = [];
-  for (const a of APP_ORDER) if (await access.hasAppAccess(user.id!, a)) have.push(a);
+  for (const a of APP_ORDER) if (await access.hasAppAccess(userId, a)) have.push(a);
   const usable = have.filter(a => APP_RULES[a][METHOD_OF[factor]]);
   const roles = usable.filter(a => a !== 'RESIDENT');
   let apps = usable;
   if (usable.includes('RESIDENT') && roles.length) {
-    const resident = (await access.listMemberships(user.id!)).some(m => m.roleScope === 'resident');
+    const resident = (await access.listMemberships(userId)).some(m => m.roleScope === 'resident');
     if (!resident) apps = roles;
   }
   return { apps, hadAccess: have.length > 0 };

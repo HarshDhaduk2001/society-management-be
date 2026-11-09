@@ -122,6 +122,7 @@ authRoutes.post('/logout', validate({ body: s.logout }), c.logout);
 authRoutes.get('/me', c.me);
 authRoutes.patch('/me', validate({ body: s.patchMe }), c.patchMe);
 authRoutes.post('/switch-society', validate({ body: s.switchSociety }), c.switchSociety);
+authRoutes.get('/apps', c.apps);
 authRoutes.post('/switch-app', validate({ body: s.switchApp }), c.switchApp);
 authRoutes.post(
   '/reauth/otp',
